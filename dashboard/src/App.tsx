@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { format, subDays } from 'date-fns'
 import { QueryErrorResetBoundary } from '@tanstack/react-query'
 import { ErrorBoundary } from 'react-error-boundary'
@@ -17,6 +17,14 @@ function defaultRange(): DateRange {
 function Dashboard() {
   const [range, setRange] = useState<DateRange>(defaultRange)
   const [deviceId, setDeviceId] = useState<string | undefined>()
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/cdn-cgi/access/get-identity', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { email?: string } | null) => setUserEmail(data?.email ?? null))
+      .catch(() => {})
+  }, [])
 
   const { data: devices = [] } = useDevices()
   const { data: ranges = [], isLoading, error } = useRanges(range, deviceId)
@@ -32,6 +40,7 @@ function Dashboard() {
     <div className="min-h-screen px-4 py-6 sm:px-6 max-w-3xl mx-auto space-y-6">
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-bold tracking-tight">LidTracker</h1>
+        {userEmail && <span className="text-xs text-gray-500">{userEmail}</span>}
         {devices.length > 0 && (
           <select
             value={deviceId ?? ''}

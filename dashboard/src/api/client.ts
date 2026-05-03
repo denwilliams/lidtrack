@@ -1,7 +1,9 @@
 import type { RangeRow, EventRow, DeviceRow } from './types'
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
+
 async function apiFetch<T>(path: string): Promise<T> {
-  const res = await fetch(path, { credentials: 'include' })
+  const res = await fetch(`${API_BASE}${path}`, { credentials: 'include' })
 
   // Access cookie expired — let Access handle the redirect.
   if (res.status === 401 || res.status === 302) {
