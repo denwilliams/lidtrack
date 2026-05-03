@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "deploy:prod": "wrangler deploy --config wrangler.prod.toml",
+    "deploy:prod": "cd ../dashboard && npm run build && cd ../worker && wrangler deploy --config wrangler.prod.toml",
     "db:migrate:local": "wrangler d1 migrations apply lidtrack-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply lidtrack-db --remote",
     "db:migrate:prod": "wrangler d1 migrations apply lidtrack-db --remote --config wrangler.prod.toml",

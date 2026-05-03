@@ -44,4 +44,14 @@ app.get('/ranges', getRanges)
 app.get('/events', getEvents)
 app.get('/devices', getDevices)
 
-export default app
+const API_PATHS = ['/days', '/ranges', '/events', '/devices']
+
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const { pathname } = new URL(request.url)
+    if (API_PATHS.some(p => pathname.startsWith(p))) {
+      return app.fetch(request, env, ctx)
+    }
+    return env.ASSETS.fetch(request)
+  },
+}

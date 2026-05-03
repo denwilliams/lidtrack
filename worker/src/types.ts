@@ -2,6 +2,7 @@ export type Env = {
   DB: D1Database
   TEAM_DOMAIN: string
   AUD_TAG: string
+  ASSETS: Fetcher
 }
 
 export type AccessIdentity = {
