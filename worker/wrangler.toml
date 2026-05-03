@@ -1,0 +1,23 @@
+name = "lidtrack-worker"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+# workers_dev = true lets you deploy to <name>.<account>.workers.dev without a
+# custom domain. Set to false and uncomment the [[routes]] block once you have
+# a domain on Cloudflare and want to put it behind Zero Trust Access.
+workers_dev = true
+
+# [[routes]]
+# pattern = "lidtrack-api.yourdomain.com"
+# custom_domain = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "lidtrack-db"
+database_id = "YOUR_D1_DATABASE_ID"
+
+[vars]
+# Your Zero Trust team domain, e.g. "your-team.cloudflareaccess.com"
+TEAM_DOMAIN = "your-team.cloudflareaccess.com"
+# AUD tag from Access → Applications → your app → Application Audience
+AUD_TAG = "your-aud-tag"

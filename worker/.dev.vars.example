@@ -1,0 +1,4 @@
+# Copy to .dev.vars for local development (never commit .dev.vars)
+# These override the [vars] values in wrangler.toml for local dev.
+TEAM_DOMAIN=your-team.cloudflareaccess.com
+AUD_TAG=your-aud-tag
