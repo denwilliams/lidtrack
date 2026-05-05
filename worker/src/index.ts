@@ -43,8 +43,9 @@ app.post('/days', postDays)
 app.get('/ranges', getRanges)
 app.get('/events', getEvents)
 app.get('/devices', getDevices)
+app.get('/validate', (c) => c.json({ ok: true, service: 'lidtrack' }))
 
-const API_PATHS = ['/days', '/ranges', '/events', '/devices']
+const API_PATHS = ['/days', '/ranges', '/events', '/devices', '/validate']
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {

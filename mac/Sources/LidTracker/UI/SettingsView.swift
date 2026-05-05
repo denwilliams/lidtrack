@@ -47,6 +47,35 @@ struct SettingsView: View {
                     }
                 }
             }
+
+            Section {
+                HStack(spacing: 10) {
+                    Button(controller.syncManager.isSyncing ? "Syncing…" : "Sync Now") {
+                        Task { await controller.syncManager.syncIfNeeded() }
+                    }
+                    .disabled(controller.syncManager.isSyncing || !controller.isConfigured)
+
+                    if controller.syncManager.isSyncing {
+                        ProgressView().scaleEffect(0.7).frame(width: 16, height: 16)
+                    } else if let err = controller.syncManager.lastError {
+                        Label(err, systemImage: "xmark.circle.fill")
+                            .foregroundStyle(.red)
+                            .font(.caption)
+                            .lineLimit(3)
+                            .textSelection(.enabled)
+                    } else if let date = controller.syncManager.lastSyncDate {
+                        Label("Synced \(date.formatted(.relative(presentation: .named)))", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                            .font(.caption)
+                    }
+                }
+            } header: {
+                Text("Manual Sync")
+            } footer: {
+                Text("Syncs any completed days not yet uploaded. Today's data is never synced until midnight.")
+                    .foregroundStyle(.secondary)
+                    .font(.caption)
+            }
         }
         .formStyle(.grouped)
         .frame(minWidth: 480)
