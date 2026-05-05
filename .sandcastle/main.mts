@@ -7,15 +7,19 @@
 //   Phase 2 (Review):    A second sonnet agent reviews the branch diff and either
 //                        approves it or makes corrections directly on the branch.
 //
-// The outer loop repeats up to MAX_ITERATIONS times, processing one issue per
-// iteration. This is a middle-complexity option between the simple-loop (no review
-// gate) and the parallel-planner (concurrent execution with a planning phase).
+// The outer loop runs indefinitely (until Ctrl+C), processing one issue per
+// iteration. It checks for open Sandcastle issues via `gh` before launching
+// any agent — if none are open, it sleeps for IDLE_WAIT_MS without burning
+// any model tokens. This is a middle-complexity option between the simple-loop
+// (no review gate) and the parallel-planner (concurrent execution with a
+// planning phase).
 //
 // Usage:
 //   npx tsx .sandcastle/main.mts
 // Or add to package.json:
 //   "scripts": { "sandcastle": "npx tsx .sandcastle/main.mts" }
 
+import { execFileSync } from "node:child_process";
 import * as sandcastle from "@ai-hero/sandcastle";
 import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
 
@@ -23,9 +27,8 @@ import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
 // Configuration
 // ---------------------------------------------------------------------------
 
-// Maximum number of implement→review cycles to run before stopping.
-// Each cycle works on one issue. Raise this to process more issues per run.
-const MAX_ITERATIONS = 10;
+// How long to wait between iterations when there are no open issues to work on.
+const IDLE_WAIT_MS = 5 * 60 * 1000;
 
 // Hooks run inside the sandbox before the agent starts each iteration.
 // npm install ensures the sandbox always has fresh dependencies.
@@ -39,11 +42,35 @@ const hooks = {
 const copyToWorktree = ["node_modules"];
 
 // ---------------------------------------------------------------------------
-// Main loop
+// Helpers
 // ---------------------------------------------------------------------------
 
-for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
-  console.log(`\n=== Iteration ${iteration}/${MAX_ITERATIONS} ===\n`);
+function hasOpenIssues(): boolean {
+  const out = execFileSync(
+    "gh",
+    ["issue", "list", "--state", "open", "--label", "Sandcastle", "--json", "number"],
+    { encoding: "utf8" },
+  );
+  const issues = JSON.parse(out) as unknown[];
+  return issues.length > 0;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// ---------------------------------------------------------------------------
+// Main loop — runs until cancelled (Ctrl+C)
+// ---------------------------------------------------------------------------
+
+for (let iteration = 1; ; iteration++) {
+  console.log(`\n=== Iteration ${iteration} ===\n`);
+
+  if (!hasOpenIssues()) {
+    console.log(`No open Sandcastle issues. Sleeping ${IDLE_WAIT_MS / 1000}s.`);
+    await sleep(IDLE_WAIT_MS);
+    continue;
+  }
 
   // -------------------------------------------------------------------------
   // Phase 1: Implement
@@ -102,5 +129,3 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
 
   console.log("\nReview complete.");
 }
-
-console.log("\nAll done.");
