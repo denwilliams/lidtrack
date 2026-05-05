@@ -5,6 +5,7 @@ import { ErrorBoundary } from 'react-error-boundary'
 import { RangePicker } from './components/RangePicker'
 import { HeadlineNumbers } from './components/HeadlineNumbers'
 import { BreakdownChart } from './components/BreakdownChart'
+import { WeekHeatmap } from './components/WeekHeatmap'
 import { useDevices, useRanges } from './hooks/useData'
 import { rollupByApp, rollupBySSID, rollupByDevice } from './lib/rollups'
 import type { DateRange } from './api/types'
@@ -63,6 +64,8 @@ function Dashboard() {
       {!isLoading && !error && (
         <>
           <HeadlineNumbers ranges={ranges} />
+
+          <WeekHeatmap ranges={ranges} dateRange={range} />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <BreakdownChart title="By app" data={appData} />
