@@ -49,7 +49,15 @@ If you find improvements to make:
 1. Make the changes directly on this branch
 2. Run tests and type checking to ensure nothing is broken
 3. Commit describing the refinements
+4. Push the branch: `git push origin {{BRANCH}}`
 
-If the code is already clean and well-structured, do nothing.
+If the code is already clean and well-structured, skip the steps above.
 
-Once complete, output <promise>COMPLETE</promise>.
+Then merge the PR for this branch — that will close the linked issue via
+the `Closes #<N>` keyword in the PR body:
+
+```
+gh pr merge {{BRANCH}} --merge
+```
+
+Once the merge succeeds, output <promise>COMPLETE</promise>.
