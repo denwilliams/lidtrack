@@ -65,6 +65,8 @@ export function rollupByDevice(ranges: RangeRow[]): DeviceStat[] {
 export type HeatmapGrid = {
   pct: number[][]
   ms: number[][]
+  ssidMs: Map<string, number>[][]
+  ssids: string[]
 }
 
 function parseLocalDate(s: string): Date {
@@ -75,10 +77,14 @@ function parseLocalDate(s: string): Date {
 export function rollupWeekHeatmap(
   ranges: RangeRow[],
   dateRange: DateRange,
-  mode: 'active' | 'lid-open',
+  mode: 'active' | 'lid-open' | 'wifi',
 ): HeatmapGrid {
   const MS_PER_HOUR = 3_600_000
   const msGrid: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0))
+  const ssidMsGrid: Map<string, number>[][] = Array.from({ length: 7 }, () =>
+    Array.from({ length: 24 }, () => new Map()),
+  )
+  const ssidTotals = new Map<string, number>()
   const dayCounts = Array(7).fill(0) as number[]
 
   let d = parseLocalDate(dateRange.from)
@@ -94,12 +100,14 @@ export function rollupWeekHeatmap(
     if (totalDuration <= 0) continue
 
     let weight: number
-    if (mode === 'active') {
+    if (mode === 'active' || mode === 'wifi') {
       weight = activeDuration(r) / totalDuration
     } else {
       weight = r.lid_open ? 1 : 0
     }
     if (weight === 0) continue
+
+    const ssid = r.ssid ?? 'Unknown'
 
     let cursor = r.started_at
     while (cursor < r.ended_at) {
@@ -110,7 +118,13 @@ export function rollupWeekHeatmap(
 
       const nextHour = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), hour + 1)
       const segEnd = Math.min(nextHour.getTime(), r.ended_at)
-      msGrid[dayIdx][hour] += (segEnd - cursor) * weight
+      const segMs = (segEnd - cursor) * weight
+      msGrid[dayIdx][hour] += segMs
+
+      const cellMap = ssidMsGrid[dayIdx][hour]
+      cellMap.set(ssid, (cellMap.get(ssid) ?? 0) + segMs)
+      ssidTotals.set(ssid, (ssidTotals.get(ssid) ?? 0) + segMs)
+
       cursor = segEnd
     }
   }
@@ -122,7 +136,11 @@ export function rollupWeekHeatmap(
     }),
   )
 
-  return { pct, ms: msGrid }
+  const ssids = [...ssidTotals.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([ssid]) => ssid)
+
+  return { pct, ms: msGrid, ssidMs: ssidMsGrid, ssids }
 }
 
 export function fmtDuration(ms: number): string {
