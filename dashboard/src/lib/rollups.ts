@@ -143,6 +143,55 @@ export function rollupWeekHeatmap(
   return { pct, ms: msGrid, ssidMs: ssidMsGrid, ssids }
 }
 
+const GAP_THRESHOLD_MS = 60 * 60_000
+
+export type Block = {
+  startedAt: number
+  endedAt: number
+  ssids: string[]
+}
+
+export type DayReport = {
+  date: string
+  blocks: Block[]
+}
+
+export function computeDayBlocks(ranges: RangeRow[]): DayReport[] {
+  const byDay = new Map<string, RangeRow[]>()
+  for (const r of ranges) {
+    const list = byDay.get(r.local_date) ?? []
+    list.push(r)
+    byDay.set(r.local_date, list)
+  }
+
+  return [...byDay.entries()]
+    .map(([date, dayRanges]) => {
+      const sorted = [...dayRanges].sort((a, b) => a.started_at - b.started_at)
+
+      const blocks: Block[] = []
+      let blockStart = sorted[0].started_at
+      let blockEnd = sorted[0].ended_at
+      let blockSsids = new Set<string>([sorted[0].ssid ?? 'Unknown'])
+
+      for (let i = 1; i < sorted.length; i++) {
+        const r = sorted[i]
+        if (r.started_at - blockEnd <= GAP_THRESHOLD_MS) {
+          blockEnd = Math.max(blockEnd, r.ended_at)
+          blockSsids.add(r.ssid ?? 'Unknown')
+        } else {
+          blocks.push({ startedAt: blockStart, endedAt: blockEnd, ssids: [...blockSsids] })
+          blockStart = r.started_at
+          blockEnd = r.ended_at
+          blockSsids = new Set([r.ssid ?? 'Unknown'])
+        }
+      }
+      blocks.push({ startedAt: blockStart, endedAt: blockEnd, ssids: [...blockSsids] })
+
+      return { date, blocks }
+    })
+    .sort((a, b) => b.date.localeCompare(a.date))
+}
+
 export function fmtDuration(ms: number): string {
   const h = Math.floor(ms / 3_600_000)
   const m = Math.floor((ms % 3_600_000) / 60_000)
