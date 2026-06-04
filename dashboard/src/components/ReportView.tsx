@@ -20,6 +20,37 @@ function fmtTime(ms: number): string {
   return format(new Date(ms), 'h:mm a')
 }
 
+function downloadCsv(days: DayReport[]) {
+  const rows: string[] = ['Date,Day,Start,End,Hours,Networks']
+  for (const day of [...days].reverse()) {
+    const dayLabel = format(parseISO(day.date), 'EEEE')
+    for (const block of day.blocks) {
+      const hours = ((block.endedAt - block.startedAt) / 3_600_000).toFixed(2)
+      const networks = block.ssids.join('; ')
+      rows.push([
+        day.date,
+        dayLabel,
+        fmtTime(block.startedAt),
+        fmtTime(block.endedAt),
+        hours,
+        networks,
+      ].map(v => `"${v}"`).join(','))
+    }
+  }
+
+  const from = days[days.length - 1]?.date ?? ''
+  const to = days[0]?.date ?? ''
+  const filename = `lidtracker-${from}-${to}.csv`
+
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export function ReportView({ days, allSsids, ssidFilter }: Props) {
   if (days.length === 0) {
     return (
@@ -34,6 +65,15 @@ export function ReportView({ days, allSsids, ssidFilter }: Props) {
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <button
+          onClick={() => downloadCsv(days)}
+          className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors"
+        >
+          Download CSV
+        </button>
+      </div>
+
       {days.map(day => {
         const totalMs = day.blocks.reduce((s, b) => s + (b.endedAt - b.startedAt), 0)
         return (
