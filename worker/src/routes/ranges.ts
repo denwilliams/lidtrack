@@ -2,7 +2,7 @@ import type { Context } from 'hono'
 import type { Env } from '../types'
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
-const MAX_DAYS = 92
+const MAX_DAYS = 366
 
 function parseQuery(c: Context<{ Bindings: Env }>) {
   const from = c.req.query('from') ?? ''
