@@ -166,7 +166,11 @@ export function computeDayBlocks(ranges: RangeRow[]): DayReport[] {
 
   return [...byDay.entries()]
     .map(([date, dayRanges]) => {
-      const sorted = [...dayRanges].sort((a, b) => a.started_at - b.started_at)
+      const sorted = dayRanges
+        .filter(r => r.active_count > 0)
+        .sort((a, b) => a.started_at - b.started_at)
+
+      if (sorted.length === 0) return null
 
       const blocks: Block[] = []
       let blockStart = sorted[0].started_at
@@ -189,6 +193,7 @@ export function computeDayBlocks(ranges: RangeRow[]): DayReport[] {
 
       return { date, blocks }
     })
+    .filter((d): d is DayReport => d !== null)
     .sort((a, b) => b.date.localeCompare(a.date))
 }
 
