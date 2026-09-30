@@ -58,8 +58,26 @@ export async function getEvents(c: Context<{ Bindings: Env }>) {
 }
 
 export async function getDevices(c: Context<{ Bindings: Env }>) {
+  // A device is registered when a day is accepted, but the authoritative
+  // inventory is the sync history. Include any device that has synced before
+  // even if its `devices` row has been removed, so long-offline devices remain
+  // selectable in the dashboard.
   const { results } = await c.env.DB
-    .prepare('SELECT * FROM devices ORDER BY last_seen DESC')
+    .prepare(`SELECT device_id, name, tz, last_seen
+      FROM devices
+      UNION ALL
+      SELECT synced.device_id,
+             synced.device_id AS name,
+             'UTC' AS tz,
+             synced.last_seen
+      FROM (
+        SELECT device_id, MAX(synced_at) AS last_seen
+        FROM synced_days
+        GROUP BY device_id
+      ) AS synced
+      LEFT JOIN devices ON devices.device_id = synced.device_id
+      WHERE devices.device_id IS NULL
+      ORDER BY last_seen DESC`)
     .all()
   return c.json(results)
 }
